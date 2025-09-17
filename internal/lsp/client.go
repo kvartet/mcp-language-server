@@ -222,6 +222,11 @@ func (c *Client) InitializeLSPClient(ctx context.Context, workspaceDir string) (
 		if err != nil {
 			return nil, err
 		}
+	case strings.Contains(path, "clangd"):
+		err := initializeClangdLanguageServer(ctx, c, workspaceDir)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &result, nil
@@ -276,7 +281,17 @@ const (
 )
 
 func (c *Client) WaitForServerReady(ctx context.Context) error {
-	// TODO: wait for specific messages or poll workspace/symbol
+	// Check if this is clangd - if so, the clangd-specific initialization
+	// will handle the readiness check more thoroughly
+	path := strings.ToLower(c.Cmd.Path)
+	if strings.Contains(path, "clangd") {
+		// Clangd readiness is handled in initializeClangdLanguageServer
+		lspLogger.Debug("Clangd detected, readiness will be handled by clangd-specific initialization")
+		return nil
+	}
+
+	// For other language servers, use a simple timeout
+	// TODO: implement specific readiness checks for other servers
 	time.Sleep(time.Second * 1)
 	return nil
 }
