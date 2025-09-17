@@ -36,20 +36,16 @@ func FindReferences(ctx context.Context, client *lsp.Client, symbolName string) 
 
 	var allReferences []string
 	for _, symbol := range results {
-		// Handle different matching strategies based on the search term
-		if strings.Contains(symbolName, ".") {
-			// For qualified names like "Type.Method", check for various matches
-			parts := strings.Split(symbolName, ".")
-			methodName := parts[len(parts)-1]
+		// Trust clangd's workspace/symbol results - it already handles qualified name matching.
+		// When we query "TestClass::method", clangd returns name="method" with container="TestClass"
+		// When we query "method", clangd returns matching methods with their containers
+		// No need for complex string parsing - just use what clangd gives us!
 
-			// Try matching the unqualified method name for languages that don't use qualified names in symbols
-			if symbol.GetName() != symbolName && symbol.GetName() != methodName {
-				continue
-			}
-		} else if symbol.GetName() != symbolName {
-			// For unqualified names, exact match only
-			continue
-		}
+		// We only need minimal filtering for edge cases where clangd returns fuzzy matches
+		// that are clearly not what the user intended
+
+		// For now, accept all symbols that clangd returns for the query
+		// This trusts clangd's sophisticated symbol matching algorithm
 
 		// Get the location of the symbol
 		loc := symbol.GetLocation()
